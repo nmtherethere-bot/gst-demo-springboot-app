@@ -1,0 +1,78 @@
+version: '3.8'
+services:
+  zookeeper:
+    image: bitnami/zookeeper:3
+    environment:
+      - ALLOW_ANONYMOUS_LOGIN=yes
+    ports:
+      - "2181:2181"
+
+  kafka:
+    image: bitnami/kafka:3
+    environment:
+      - KAFKA_BROKER_ID=1
+      - KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181
+      - KAFKA_LISTENERS=PLAINTEXT://:9092
+      - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092
+      - ALLOW_PLAINTEXT_LISTENER=yes
+    ports:
+      - "9092:9092"
+    depends_on:
+      - zookeeper
+
+  user-service:
+    build: ./user-service
+    ports:
+      - "8081:8080"
+    environment:
+      - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - SERVER_PORT=8080
+    depends_on:
+      - kafka
+
+  invoice-service:
+    build: ./invoice-service
+    ports:
+      - "8082:8080"
+    volumes:
+      - ./data/invoices:/app/data/invoices
+    environment:
+      - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - SERVER_PORT=8080
+    depends_on:
+      - kafka
+
+  returns-service:
+    build: ./returns-service
+    ports:
+      - "8083:8080"
+    environment:
+      - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - SERVER_PORT=8080
+    depends_on:
+      - kafka
+
+  prometheus:
+    image: prom/prometheus:latest
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+    ports:
+      - "9090:9090"
+    depends_on:
+      - user-service
+      - invoice-service
+      - returns-service
+
+  grafana:
+    image: grafana/grafana:8.0.0
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./grafana/provisioning/:/etc/grafana/provisioning/:ro
+      - ./grafana/dashboards/:/etc/grafana/dashboards/:ro
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    depends_on:
+      - prometheus

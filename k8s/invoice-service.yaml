@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: invoice-service
+  namespace: gst-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: invoice-service
+  template:
+    metadata:
+      labels:
+        app: invoice-service
+    spec:
+      containers:
+        - name: invoice-service
+          image: nilk3391/invoice-service:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8082
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: invoice-service
+  namespace: gst-app
+spec:
+  selector:
+    app: invoice-service
+  ports:
+    - port: 8082
+      targetPort: 8082

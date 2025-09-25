@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: returns-service
+  namespace: gst-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: returns-service
+  template:
+    metadata:
+      labels:
+        app: returns-service
+    spec:
+      containers:
+        - name: returns-service
+          image: nilk3391/return-service:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8083
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: returns-service
+  namespace: gst-app
+spec:
+  selector:
+    app: returns-service
+  ports:
+    - port: 8083
+      targetPort: 8083

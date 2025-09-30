@@ -19,6 +19,16 @@ spec:
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8083
+          env:
+            - name: SPRING_CONFIG_LOCATION
+              value: file:/config/application.properties
+          volumeMounts:
+            - name: config-volume
+              mountPath: /config
+      volumes:
+        - name: config-volume
+          configMap:
+            name: returns-service-config
 ---
 apiVersion: v1
 kind: Service
@@ -26,6 +36,7 @@ metadata:
   name: returns-service
   namespace: gst-app
 spec:
+  type: ClusterIP
   selector:
     app: returns-service
   ports:

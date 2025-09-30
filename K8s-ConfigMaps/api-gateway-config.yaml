@@ -1,0 +1,41 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: api-gateway-config
+  namespace: gst-app
+data:
+  application.properties: |
+    server.port=8085
+    spring.application.name=api-gateway
+
+    # Eureka client
+    eureka.client.service-url.defaultZone=http://eureka-server:8761/eureka/
+
+    eureka.instance.prefer-ip-address=true
+
+    # Gateway discovery
+    spring.cloud.gateway.discovery.locator.enabled=true
+    spring.cloud.gateway.discovery.locator.lower-case-service-id=true
+
+    # Route configs
+    spring.cloud.gateway.routes[0].id=user-service
+    spring.cloud.gateway.routes[0].uri=lb://user-service
+    spring.cloud.gateway.routes[0].predicates[0]=Path=/api/user/**
+
+    spring.cloud.gateway.routes[1].id=invoice-service
+    spring.cloud.gateway.routes[1].uri=lb://invoice-service
+    spring.cloud.gateway.routes[1].predicates[0]=Path=/api/invoice/**
+
+    spring.cloud.gateway.routes[2].id=returns-service
+    spring.cloud.gateway.routes[2].uri=lb://returns-service
+    spring.cloud.gateway.routes[2].predicates[0]=Path=/api/returns/**
+
+    spring.cloud.gateway.routes[3].id=auth-service
+    spring.cloud.gateway.routes[3].uri=lb://auth-service
+    spring.cloud.gateway.routes[3].predicates[0]=Path=/api/auth/**
+
+    management.endpoints.web.exposure.include=*
+    management.endpoint.prometheus.enabled=true
+    
+    # ✅ Kafka configuration
+    spring.kafka.bootstrap-servers=kafka:9092

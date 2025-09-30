@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: auth-service-config
+  namespace: gst-app
+data:
+  application.properties: |
+    server.port=8084
+    spring.application.name=auth-service
+
+    eureka.client.service-url.defaultZone=http://eureka-server:8761/eureka/
+
+    eureka.instance.prefer-ip-address=true
+
+    jwt.secret=your-secret-key
+    jwt.expiration=3600000
+
+    management.endpoints.web.exposure.include=*
+    management.endpoint.prometheus.enabled=true
+    
+    # ✅ Kafka configuration
+    spring.kafka.bootstrap-servers=kafka:9092

@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: eureka-server-config
+  namespace: gst-app
+data:
+  application.properties: |
+    server.port=8761
+    spring.application.name=eureka-server
+
+    # Eureka server settings
+    eureka.client.register-with-eureka=false
+    eureka.client.fetch-registry=false
+    eureka.instance.hostname=eureka-server
+
+    # Actuator + Prometheus
+    management.endpoints.web.exposure.include=*
+    management.endpoint.prometheus.enabled=true
+    
+     # ✅ Kafka configuration
+    spring.kafka.bootstrap-servers=kafka:9092

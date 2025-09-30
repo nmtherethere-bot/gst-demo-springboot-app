@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: returns-service-config
+  namespace: gst-app
+data:
+  application.properties: |
+    server.port=8083
+    spring.application.name=returns-service
+
+    eureka.client.service-url.defaultZone=http://eureka-server:8761/eureka/
+
+    eureka.instance.prefer-ip-address=true
+
+    management.endpoints.web.exposure.include=*
+    management.endpoint.prometheus.enabled=true
+    
+    # ✅ Kafka configuration
+    spring.kafka.bootstrap-servers=kafka:9092

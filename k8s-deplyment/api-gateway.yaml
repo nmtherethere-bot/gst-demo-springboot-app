@@ -6,19 +6,29 @@ metadata:
 spec:
   replicas: 1
   selector:
-    matchLabels: { app: api-gateway }
+    matchLabels:
+      app: api-gateway
   template:
     metadata:
-      labels: { app: api-gateway }
+      labels:
+        app: api-gateway
     spec:
       containers:
         - name: api-gateway
-          image: nilk3391/api-gateway:latest
+          image: nilk3391/api-gateway:latest.v2
           imagePullPolicy: IfNotPresent
-          ports: [{ containerPort: 8080 }]
-          env:                       # example of overriding Eureka URL
-            - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
-              value: "http://eureka-server:8761/eureka/"
+          ports:
+            - containerPort: 8085
+          env:
+            - name: SPRING_CONFIG_LOCATION
+              value: file:/config/application.properties
+          volumeMounts:
+            - name: config-volume
+              mountPath: /config
+      volumes:
+        - name: config-volume
+          configMap:
+            name: api-gateway-config
 ---
 apiVersion: v1
 kind: Service
@@ -26,10 +36,9 @@ metadata:
   name: api-gateway
   namespace: gst-app
 spec:
-  selector: { app: api-gateway }
+  type: LoadBalancer
+  selector:
+    app: api-gateway
   ports:
-    - port: 80        # external entry point
-      targetPort: 8080
-      name: http
-      protocol: TCP
-  type: LoadBalancer   # on Docker Desktop/minikube this becomes NodePort or tunnel LB
+    - port: 8085
+      targetPort: 8085

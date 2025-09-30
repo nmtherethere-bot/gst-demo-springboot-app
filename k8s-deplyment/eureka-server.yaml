@@ -6,21 +6,29 @@ metadata:
 spec:
   replicas: 1
   selector:
-    matchLabels: { app: eureka-server }
+    matchLabels:
+      app: eureka-server
   template:
     metadata:
-      labels: { app: eureka-server }
+      labels:
+        app: eureka-server
     spec:
       containers:
         - name: eureka-server
-          image: nilk3391/eureka-server:latest
+          image: nilk3391/eureka-server:latest.v2
           imagePullPolicy: IfNotPresent
-          ports: [{ containerPort: 8761 }]
-          readinessProbe:
-            httpGet:
-              path: /actuator/health
-              port: 8761
-              scheme: HTTP
+          ports:
+            - containerPort: 8761
+          env:
+            - name: SPRING_CONFIG_LOCATION
+              value: file:/config/application.properties
+          volumeMounts:
+            - name: config-volume
+              mountPath: /config
+      volumes:
+        - name: config-volume
+          configMap:
+            name: eureka-server-config
 ---
 apiVersion: v1
 kind: Service
@@ -28,8 +36,9 @@ metadata:
   name: eureka-server
   namespace: gst-app
 spec:
-  selector: { app: eureka-server }
+  type: ClusterIP
+  selector:
+    app: eureka-server
   ports:
     - port: 8761
       targetPort: 8761
-      name: http

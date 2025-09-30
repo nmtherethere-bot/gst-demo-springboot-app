@@ -2,14 +2,14 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_REGISTRY = 'nilk3391'
+        DOCKER_REGISTRY = 'nilk3391'   // Your DockerHub username
     }
 
     stages {
         stage('Checkout Code') {
             steps {
                 echo 'Checking out code from Git...'
-                git branch: 'main', url: 'https://github.com/nmtherethere-bot/gst-demo-springboot-app.git' // Replace with your repo URL
+                git branch: 'main', url: 'https://github.com/nmtherethere-bot/gst-demo-springboot-app.git'
             }
         }
 
@@ -20,7 +20,9 @@ pipeline {
                     services.each { service ->
                         dir(service) {
                             echo "Building and testing ${service}..."
-                            sh 'mvn clean package -DskipTests=false'
+                            sh """
+                                mvn clean package -DskipTests=false
+                            """
                         }
                     }
                 }
@@ -30,10 +32,15 @@ pipeline {
         stage('Docker Build & Push') {
             steps {
                 script {
-                    def services = ['user-service','invoice-service','return-service','auth-service','api-gateway','eureka-server']
+                    def services = ["user-service", "invoice-service", "return-service", "auth-service", "api-gateway", "eureka-server"]
                     services.each { service ->
-                        dir(service) {
-                            echo "Building Docker image for ${service}..."
-                            sh "docker build -t $DOCKER_REGISTRY/${service}:latest ."
-                            echo "Pushing Docker image for ${service}..."
-                            sh "docker push $DOCKER_REGISTRY/${se_
+                        sh """
+                            docker build -t $DOCKER_REGISTRY/${service}:latest ./${service}
+                            docker push $DOCKER_REGISTRY/${service}:latest
+                        """
+                    }
+                }
+            }
+        }
+    }
+}

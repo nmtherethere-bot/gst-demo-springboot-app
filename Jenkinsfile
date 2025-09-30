@@ -17,7 +17,7 @@ pipeline {
             steps {
                 echo 'Checking out code from Git...'
                 git branch: 'main',
-                    credentialsId: 'git-credentials', // Add your Git token in Jenkins
+                    credentialsId: 'git-credentials',
                     url: 'https://github.com/nmtherethere-bot/gst-demo-springboot-app.git'
             }
         }
@@ -25,7 +25,7 @@ pipeline {
         stage('Build & Test Microservices') {
             steps {
                 script {
-                    def services = ['user-service','invoice-service','return-service','auth-service','api-gateway','eureka-server']
+                    def services = ['user-service','invoice-service','returns-service','auth-service','api-gateway','eureka-server']
                     services.each { service ->
                         dir(service) {
                             echo "Building and testing ${service}..."
@@ -47,7 +47,7 @@ pipeline {
         stage('Docker Build & Push') {
             steps {
                 script {
-                    def services = ['user-service','invoice-service','return-service','auth-service','api-gateway','eureka-server']
+                    def services = ['user-service','invoice-service','returns-service','auth-service','api-gateway','eureka-server']
                     services.each { service ->
                         sh """
                             docker build -t $DOCKER_REGISTRY/${service}:latest ./${service}
@@ -61,9 +61,9 @@ pipeline {
         stage('Deploy to Kubernetes') {
             steps {
                 script {
-                    def services = ['user-service','invoice-service','return-service','auth-service','api-gateway','eureka-server']
+                    def services = ['user-service','invoice-service','returns-service','auth-service','api-gateway','eureka-server']
                     services.each { service ->
-                        sh "kubectl apply -f k8s/${service}-deployment.yaml"
+                        sh "kubectl apply -f k8s-deplyment/${service}-deployment.yaml"
                     }
                 }
             }

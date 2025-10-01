@@ -1,24 +1,16 @@
 pipeline {
-    agent any   // run on Jenkins agent (your Jenkins container)
-
-    tools {
-        maven 'maven'     // Maven tool configured in Jenkins global tools
-        dockerTool 'docker' // Docker tool configured in Jenkins global tools
-    }
+    agent any   // run globally on Jenkins node
 
     environment {
         DOCKER_REGISTRY = 'nilk3391'
-        DOCKER = tool 'docker'   // resolves to installed docker path
-        MVN    = tool 'maven'    // resolves to installed maven path
-        PATH   = "${DOCKER}/bin:${MVN}/bin:${env.PATH}"
     }
 
-    options {
-        skipDefaultCheckout false
+    tools {
+        maven 'maven'   // use Maven tool configured in Jenkins
+        dockerTool 'docker' // use Docker tool configured in Jenkins
     }
 
     stages {
-
         stage('Clean Workspace') {
             steps {
                 cleanWs()
@@ -35,6 +27,12 @@ pipeline {
         }
 
         stage('Build & Test Microservices') {
+            agent {
+                docker {
+                    image 'maven:3.9.2-eclipse-temurin-17'
+                    args '-v /var/run/docker.sock:/var/run/docker.sock'
+                }
+            }
             steps {
                 script {
                     def services = ['user-service','invoice-service','returns-service','auth-service','api-gateway','eureka-server']
@@ -42,7 +40,7 @@ pipeline {
                         ["${service}": {
                             dir(service) {
                                 echo "Building and testing ${service}..."
-                                sh "${MVN}/bin/mvn clean package -DskipTests=false"
+                                sh 'mvn clean package -DskipTests=false'
                             }
                         }]
                     }
@@ -53,11 +51,13 @@ pipeline {
 
         stage('Docker Check & Login') {
             steps {
-                sh "${DOCKER}/bin/docker --version"
-                sh "${DOCKER}/bin/docker info"
+                sh 'docker --version'
+                sh 'docker info'
 
-                withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
-                    sh "echo \$DOCKER_PASS | ${DOCKER}/bin/docker login -u \$DOCKER_USER --password-stdin"
+                withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials',
+                                                  usernameVariable: 'DOCKER_USER',
+                                                  passwordVariable: 'DOCKER_PASS')]) {
+                    sh 'echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin'
                 }
             }
         }
@@ -69,9 +69,9 @@ pipeline {
                     def dockerStages = services.collectEntries { service ->
                         ["${service}": {
                             echo "Building Docker image for ${service}..."
-                            sh "${DOCKER}/bin/docker build -t $DOCKER_REGISTRY/${service}:latest ./${service}"
+                            sh "docker build -t $DOCKER_REGISTRY/${service}:latest ./${service}"
                             echo "Pushing Docker image for ${service}..."
-                            sh "${DOCKER}/bin/docker push $DOCKER_REGISTRY/${service}:latest"
+                            sh "docker push $DOCKER_REGISTRY/${service}:latest"
                         }]
                     }
                     parallel dockerStages
@@ -95,11 +95,7 @@ pipeline {
     }
 
     post {
-        success {
-            echo '✅ Pipeline completed successfully!'
-        }
-        failure {
-            echo '❌ Pipeline failed! Check the logs above.'
-        }
+        success { echo '✅ Pipeline completed successfully!' }
+        failure { echo '❌ Pipeline failed! Check the logs above.' }
     }
 }

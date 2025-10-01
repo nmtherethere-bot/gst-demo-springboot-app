@@ -1,17 +1,19 @@
 pipeline {
-    agent {
-        docker {
-            // Maven + JDK agent for builds
-            image 'maven:3.9.2-eclipse-temurin-17'
-        }
+    agent any   // run on Jenkins agent (your Jenkins container)
+
+    tools {
+        maven 'maven'     // Maven tool configured in Jenkins global tools
+        dockerTool 'docker' // Docker tool configured in Jenkins global tools
     }
 
     environment {
         DOCKER_REGISTRY = 'nilk3391'
+        DOCKER = tool 'docker'   // resolves to installed docker path
+        MVN    = tool 'maven'    // resolves to installed maven path
+        PATH   = "${DOCKER}/bin:${MVN}/bin:${env.PATH}"
     }
 
     options {
-        // Clean workspace before starting
         skipDefaultCheckout false
     }
 
@@ -40,7 +42,7 @@ pipeline {
                         ["${service}": {
                             dir(service) {
                                 echo "Building and testing ${service}..."
-                                sh 'mvn clean package -DskipTests=false'
+                                sh "${MVN}/bin/mvn clean package -DskipTests=false"
                             }
                         }]
                     }
@@ -51,12 +53,11 @@ pipeline {
 
         stage('Docker Check & Login') {
             steps {
-                // Ensure Docker CLI works inside Jenkins container
-                sh 'docker --version'
-                sh 'docker info'
+                sh "${DOCKER}/bin/docker --version"
+                sh "${DOCKER}/bin/docker info"
 
                 withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
-                    sh 'echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin'
+                    sh "echo \$DOCKER_PASS | ${DOCKER}/bin/docker login -u \$DOCKER_USER --password-stdin"
                 }
             }
         }
@@ -68,9 +69,9 @@ pipeline {
                     def dockerStages = services.collectEntries { service ->
                         ["${service}": {
                             echo "Building Docker image for ${service}..."
-                            sh "docker build -t $DOCKER_REGISTRY/${service}:latest ./${service}"
+                            sh "${DOCKER}/bin/docker build -t $DOCKER_REGISTRY/${service}:latest ./${service}"
                             echo "Pushing Docker image for ${service}..."
-                            sh "docker push $DOCKER_REGISTRY/${service}:latest"
+                            sh "${DOCKER}/bin/docker push $DOCKER_REGISTRY/${service}:latest"
                         }]
                     }
                     parallel dockerStages
